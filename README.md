@@ -2,13 +2,13 @@
 Mainly to create datasets without the need for intermediates. Maybe useful to compare encoding settings.
 
 ### Requirements
-   * `pip install PyTurboJPEG`
-   * [libturbo-jpeg](https://github.com/libjpeg-turbo/libjpeg-turbo/releases)  
-     __Windows:__ Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
+* [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases)   *(optional)*
+   * __Windows:__ Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
      __Linux:__ Via package manager e.g. `apt install libturbojpeg`
-   * [ffmpeg](https://ffmpeg.org/download.html)  
-     Download and add to PATH or put into your vapoursynth folder.  
-     Path can also be manually set to a different location.
+   * Then install python package via `pip install PyTurboJPEG`
+* [ffmpeg](https://ffmpeg.org/download.html) *(optional)*  
+  Download and add to PATH or put into your Vapoursynth folder.  
+  Path can also be manually set to a different location.
 
 
 ### Setup
@@ -40,12 +40,12 @@ Which planes to degrade. Any unmentioned planes will simply be copied.
 If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
-Path to libturbo-jpeg in case it is not auto-detected.
+Path to libjpeg-turbo, in case it is not auto-detected.
 
 <br />
 
 ## FFmpeg Degradation
-Runs randomizable ffmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Can add spatial and temporal compression artifacts within each chunk.
+Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Can add spatial and temporal compression artifacts within each chunk.
 
 ```python
 import vs_degrade
@@ -59,7 +59,7 @@ __*`chunk`*__
 Amount of frames to encode at once.
 
 __*`args`* (optional)__  
-The encoding arguments of a ffmpeg command: `args="-c:v mpeg2video -q:v 10"`  
+The encoding arguments of a FFmpeg command: `args="-c:v mpeg2video -q:v 10"`  
 * Int values can be randomized per chunk by providing a range: `args="-c:v mpeg2video -q:v {rand(5,30)}`  
   For a float value range: `{randf(-0.5,0.9)}`  
   For choosing from a list: `{choice(veryfast,medium,veryslow)}`  
@@ -79,11 +79,11 @@ The encoding arguments of a ffmpeg command: `args="-c:v mpeg2video -q:v 10"`
 * Make sure your randomized values are actually in the range supported by FFmpeg.
 
 __*`fields`* (optional)__  
-Will seperate the clip into fields, degrade with ffmpeg, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
+Will seperate the clip into fields, degrade with FFmpeg, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
 If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
-Path to FFmpeg in case it is not auto-detected.
+Path to FFmpeg, in case it is not auto-detected.
