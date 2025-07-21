@@ -33,11 +33,11 @@ Image quality in the range 1-100 with 1 being the worst.
 Can be a single value or randomized each frame by providing a range: `quality=[30, 80]`
 
 __*`fields`* (optional)__  
-Will separate the clip into fields, degrade each field seperately, then put them back together. This creates combing/interlacing artifacts and more mosquito noise.
+Will separate the clip into fields, degrade each field seperately, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
-If nothing is set, all planes will be color fixed.
+If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
 Path to libturbo-jpeg in case it is not auto-detected.
@@ -66,7 +66,7 @@ The encoding arguments of a ffmpeg command: `args="-c:v mpeg2video -q:v 10"`
 * Full commands can be randomized per chunk by providing a list:
   ```python
   args = ["-c:v mpeg2video -q:v {rand(5,30)}",
-          "-c:v libx264 -crf {rand(5,50)} -x264-params keyint={rand(1,250)}:bframes={rand(0,16)}",
+          "-c:v libx264 -crf {rand(5,50)} -x264-params bframes={rand(0,16)}",
           "-c:v libx265 -crf {rand(5,50)} -preset {choice(veryfast,medium,veryslow)}",
           "-c:v libvpx-vp9 -crf {rand(5,60)} -b:v 0",
           "-c:v prores_ks -p:v {rand(0,4)} -q:v {rand(1,9)}"]
@@ -78,13 +78,12 @@ The encoding arguments of a ffmpeg command: `args="-c:v mpeg2video -q:v 10"`
   `args="-c:v mpeg2video -q:v 10 -flags +ildct+ilme -top 1"`  
 * Make sure your randomized values are actually in the range supported by FFmpeg.
 
-
 __*`fields`* (optional)__  
-Will seperate the clip into fields, degrade with ffmpeg, then put them back together. This creates combing/interlacing artifacts and more mosquito noise.
+Will seperate the clip into fields, degrade with ffmpeg, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
-If nothing is set, all planes will be color fixed.
+If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
 Path to FFmpeg in case it is not auto-detected.
