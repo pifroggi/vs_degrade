@@ -59,7 +59,7 @@ Clip to degrade. Currently supports YUV444P8, YUV422P8, and YUV420P8 formats.
 __*`chunk`*__  
 Amount of frames to encode at once.
 
-__*`args`* (optional)__  
+__*`args`*__  
 The video encoding arguments of an FFmpeg command.
 * Simplest example using the MPEG-2 codec with quality 10:
   ```python
