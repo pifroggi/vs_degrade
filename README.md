@@ -1,14 +1,14 @@
 # Degradation functions for Vapoursynth
-Mainly to create datasets without the need for intermediates. Maybe useful to compare encoding settings.
+Mainly to generate datasets without the need for intermediates. Maybe useful to compare encoding settings.
 
 ### Requirements
-* [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases)   *(optional)*
+* [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases) *(optional)*
    * __Windows:__ Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
      __Linux:__ Via package manager e.g. `apt install libturbojpeg`
    * Then install python package via `pip install PyTurboJPEG`
-* [ffmpeg](https://ffmpeg.org/download.html) *(optional)*  
-  Download and add to PATH or put into your Vapoursynth folder.  
-  Path can also be manually set to a different location.
+* [ffmpeg](https://ffmpeg.org/download.html) *(optional)*
+   * Download and add to PATH, or put into your vapoursynth folder.  
+     Path can also be manually set to a different location.
 
 
 ### Setup
@@ -30,10 +30,11 @@ Clip to degrade. Jpeg supports YUV444P8, YUV422P8, and YUV420P8 formats.
 
 __*`quality`*__  
 Image quality in the range 1-100 with 1 being the worst.  
-Can be a single value or randomized each frame by providing a range: `quality=[30, 80]`
+Can be a constant value or randomized each frame by providing a range: `quality=[30, 80]`
 
 __*`fields`* (optional)__  
-Will separate the clip into fields, degrade each field seperately, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
+Will separate the clip into fields, degrade each field seperately, then put them back together.  
+This creates interlacing artifacts like combing and more mosquito noise.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
@@ -45,7 +46,7 @@ Path to libjpeg-turbo, in case it is not auto-detected.
 <br />
 
 ## FFmpeg Degradation
-Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Can add spatial and temporal compression artifacts within each chunk.
+Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Adds spatial and temporal compression artifacts within each chunk.
 
 ```python
 import vs_degrade
@@ -59,10 +60,19 @@ __*`chunk`*__
 Amount of frames to encode at once.
 
 __*`args`* (optional)__  
-The encoding arguments of a FFmpeg command: `args="-c:v mpeg2video -q:v 10"`  
-* Int values can be randomized per chunk by providing a range: `args="-c:v mpeg2video -q:v {rand(5,30)}`  
-  For a float value range: `{randf(-0.5,0.9)}`  
-  For choosing from a list: `{choice(veryfast,medium,veryslow)}`  
+The video encoding arguments of an FFmpeg command.
+* Simplest example using the MPEG-2 codec with quality 10:
+  ```python
+  args = "-c:v mpeg2video -q:v 10"
+  ```
+* Arguments can optionally be randomized per chunk:  
+  `{rand(5,30)}` sets randomizer range for int values  
+  `{randf(-0.5,0.9)}` sets randomizer range for float values  
+  `{choice(veryfast,medium,veryslow)}` chooses randomly from a list  
+  Example using the H.264 codec with random crf and preset:
+  ```python
+  args = "-c:v libx264 -crf {rand(5,50)} -preset {choice(veryfast,medium,veryslow)}"
+  ```
 * Full commands can be randomized per chunk by providing a list:
   ```python
   args = ["-c:v mpeg2video -q:v {rand(5,30)}",
@@ -73,13 +83,16 @@ The encoding arguments of a FFmpeg command: `args="-c:v mpeg2video -q:v 10"`
   clip = vs_degrade.ffmpeg(clip, chunk=10, args=args)
   ```
 * FFmpeg filters can also be applied, but input and output dimensions need to be equal:  
-  `args="-vf eq=contrast={randf(0.5,1.5)}:brightness={randf(-0.2,0.2)} -c:v mpeg2video -q:v 10"`  
+  ```python
+  args = "-vf eq=contrast={randf(0.5,1.5)}:brightness={randf(-0.2,0.2)} -c:v mpeg2video -q:v 10"
+  ```  
 * You may want to add additional interlacing flags if `fields=True`, but it is not strictly necessary:  
-  `args="-c:v mpeg2video -q:v 10 -flags +ildct+ilme -top 1"`  
-* Make sure your randomized values are actually in the range supported by FFmpeg.
-
+  ```python
+  args = "-c:v mpeg2video -q:v 10 -flags +ildct+ilme -top 1"
+  ```  
 __*`fields`* (optional)__  
-Will seperate the clip into fields, degrade with FFmpeg, then put them back together. This creates interlacing artifacts like combing and more mosquito noise.
+Will seperate the clip into fields, degrade with FFmpeg, then put them back together.  
+This creates interlacing artifacts like combing and more mosquito noise.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
