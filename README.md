@@ -66,7 +66,7 @@ The video encoding arguments of an FFmpeg command.
   args = "-c:v mpeg2video -q:v 10"
   ```
 * Arguments can optionally be randomized per chunk:  
-  `{rand(5,30)}` sets randomizer range for int values  
+  `{rand(5,50)}` sets randomizer range for int values  
   `{randf(-0.5,0.9)}` sets randomizer range for float values  
   `{choice(veryfast,medium,veryslow)}` chooses randomly from a list  
   Example using the H.264 codec with random crf and preset:
@@ -82,10 +82,14 @@ The video encoding arguments of an FFmpeg command.
           "-c:v prores_ks -p:v {rand(0,4)} -q:v {rand(1,9)}"]
   clip = vs_degrade.ffmpeg(clip, chunk=10, args=args)
   ```
-* FFmpeg filters can also be applied, but input and output dimensions need to be equal:  
+* FFmpeg filters can also be applied, this one for example randomly sharpens before compressing:  
   ```python
-  args = "-vf eq=contrast={randf(0.5,1.5)}:brightness={randf(-0.2,0.2)} -c:v mpeg2video -q:v 10"
-  ```  
+  args = "-vf unsharp=5:5:{randf(0.0,1.0)} -c:v mpeg2video -q:v 10"
+  ```
+  This adds ringing with ripples and skips compression. `{w}` `{h}` gets dimensions, output needs to be equal:
+  ```python
+  args = "-vf scale={w}*{randf(0.85,0.93)}:{h}*{randf(0.85,0.93)}:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
+  ```
 * You may want to add additional interlacing flags if `fields=True`, but it is not strictly necessary:  
   ```python
   args = "-c:v mpeg2video -q:v 10 -flags +ildct+ilme -top 1"
