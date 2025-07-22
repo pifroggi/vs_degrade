@@ -82,13 +82,13 @@ The video encoding arguments of an FFmpeg command.
           "-c:v prores_ks -p:v {rand(0,4)} -q:v {rand(1,9)}"]
   clip = vs_degrade.ffmpeg(clip, chunk=10, args=args)
   ```
-* FFmpeg filters can also be applied, this one for example randomly sharpens before compressing:  
+* FFmpeg filters can also be applied. This one for example randomly sharpens before compressing:  
   ```python
   args = "-vf unsharp=5:5:{randf(0.0,1.0)} -c:v mpeg2video -q:v 10"
   ```
   This adds ringing with ripples and skips compression. `{w}` `{h}` gets dimensions, output needs to be equal:
   ```python
-  args = "-vf scale={w}*{randf(0.85,0.93)}:{h}*{randf(0.85,0.93)}:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
+  args = "-vf scale={w}*0.85:{h}*0.85:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
   ```
 * You may want to add additional interlacing flags if `fields=True`, but it is not strictly necessary:  
   ```python
