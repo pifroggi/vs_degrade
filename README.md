@@ -86,7 +86,7 @@ The video encoding arguments of an FFmpeg command.
   ```python
   args = "-vf unsharp=5:5:{randf(0.0,1.0)} -c:v mpeg2video -q:v 10"
   ```
-  This adds ringing with ripples and skips compression. `{w}` `{h}` gets dimensions, output needs to be equal:
+  This adds gibbs ringing and skips compression. `{w}` `{h}` gets dimensions, output needs to be equal:
   ```python
   args = "-vf scale={w}*0.85:{h}*0.85:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
   ```
