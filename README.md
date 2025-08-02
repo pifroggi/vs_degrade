@@ -1,4 +1,4 @@
-# Degradation functions for Vapoursynth
+# Degradation functions for VapourSynth
 Mainly to generate datasets without the need for intermediates. Maybe useful to compare encoding settings.
 
 ### Requirements
