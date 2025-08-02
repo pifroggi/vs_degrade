@@ -8,7 +8,7 @@ Mainly to generate datasets without the need for intermediates. Maybe useful to 
    * Then install python package via `pip install PyTurboJPEG`
 * [ffmpeg](https://ffmpeg.org/download.html) *(optional)*
    * Download and add to PATH, or put into your vapoursynth folder.  
-     Path can also be manually set to a different location.
+     You have probably already done that.
 
 
 ### Setup
@@ -41,7 +41,7 @@ Which planes to degrade. Any unmentioned planes will simply be copied.
 If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
-Path to libjpeg-turbo, in case it is not auto-detected.
+Path to libjpeg-turbo (`turbojpeg.dll` on Windows, `libturbojpeg.so` on Linux), if not auto-detected.
 
 <br />
 
@@ -103,4 +103,4 @@ Which planes to degrade. Any unmentioned planes will simply be copied.
 If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
-Path to FFmpeg, in case it is not auto-detected.
+Path to FFmpeg (`ffmpeg.exe` on Windows, `ffmpeg` on Linux), if not auto-detected.
