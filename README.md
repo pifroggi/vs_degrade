@@ -5,10 +5,11 @@ Mainly to generate datasets without the need for intermediates. Maybe useful to 
 * [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases) *(optional)*
    * __Windows:__ Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
      __Linux:__ Via package manager e.g. `apt install libturbojpeg`
-   * Then install python package via `pip install PyTurboJPEG`
+   * And install python packages via `pip install PyTurboJPEG numpy`
 * [ffmpeg](https://ffmpeg.org/download.html) *(optional)*
    * Download and add to PATH, or put into your vapoursynth folder.  
      You have probably already done that.
+   * And install a python package via `pip install numpy`
 
 
 ### Setup
