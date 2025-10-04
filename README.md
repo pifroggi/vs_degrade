@@ -19,7 +19,7 @@ Or install via pip: `pip install -U git+https://github.com/pifroggi/vs_degrade.g
 <br />
 
 ## Jpeg Degradation
-Degrades a YUV clip directly as is, without upsampling chroma or doing any format/color conversions, since Jpeg also works in YUV. Adds purely spatial compression artifacts.
+Degrades a YUV clip directly as is, without upsampling chroma or doing any format/color conversions, since Jpeg also works in YUV. Adds purely spatial compression artifacts and is very fast.
 
 ```python
 import vs_degrade
@@ -87,9 +87,9 @@ The video encoding arguments of an FFmpeg command.
   ```python
   args = "-vf unsharp=5:5:{randf(0.0,1.0)} -c:v mpeg2video -q:v 10"
   ```
-  This adds gibbs ringing and skips compression. `{w}` `{h}` gets dimensions, output needs to be equal:
+  This adds gibbs ringing and skips compression. `{w}` `{h}` gets the input dimensions:
   ```python
-  args = "-vf scale={w}*0.85:{h}*0.85:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
+  args = "-vf 'scale={w}*0.85:{h}*0.85:sws_flags=sinc,scale={w}:{h}:sws_flags=sinc' -c:v rawvideo"
   ```
 * You may want to add additional interlacing flags if `fields=True`, but it is not strictly necessary:  
   ```python
@@ -104,4 +104,4 @@ Which planes to degrade. Any unmentioned planes will simply be copied.
 If nothing is set, all planes will be degraded.
 
 __*`path`* (optional)__  
-Path to FFmpeg (`ffmpeg.exe` on Windows, `ffmpeg` on Linux), if not auto-detected.
+Path to FFmpeg (`ffmpeg.exe` on Windows, just `ffmpeg` on Linux), if not auto-detected.
