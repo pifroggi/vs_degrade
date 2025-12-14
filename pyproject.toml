@@ -10,6 +10,7 @@ authors = [{ name = "pifroggi" }]
 
 dependencies = [
 	"PyTurboJPEG",
+	"numpy"
 ]
 
 [project.urls]
