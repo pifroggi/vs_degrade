@@ -62,7 +62,7 @@ def jpeg(clip, quality=50, fields=False, planes=[0, 1, 2], path=None):
     
     orig_clip      = clip
     clip_format    = clip.format
-    num_planes     = clip.format.num_planes
+    num_planes     = clip_format.num_planes
     subsampling    = (clip_format.subsampling_w, clip_format.subsampling_h)
     subsampling_w  = 1 << clip_format.subsampling_w # 1 for 444, 2 for 422/420
     subsampling_h  = 1 << clip_format.subsampling_h # 1 for 444/422, 2 for 420
@@ -71,9 +71,9 @@ def jpeg(clip, quality=50, fields=False, planes=[0, 1, 2], path=None):
     if clip_format.color_family != vs.YUV:
         raise ValueError("vs_degrade.jpeg: Jpeg works in YUV. This expects the input clip to be YUV already.")
     if clip_format.bits_per_sample != 8:
-        raise ValueError("vs_degrade.jpeg: Jpeg only support 8-bit.")
+        raise ValueError("vs_degrade.jpeg: Jpeg only supports 8-bit.")
     if subsampling not in subsample_map:
-        raise ValueError("vs_degrade.jpeg: Jpeg only supports 444, 422, and 420 subsampling.")
+        raise ValueError("vs_degrade.jpeg: Jpeg only supports 420, 422, and 444 subsampling.")
     if planes is None:
         planes = list(range(num_planes))
     if isinstance(planes, int):
@@ -140,8 +140,8 @@ def jpeg(clip, quality=50, fields=False, planes=[0, 1, 2], path=None):
     else:
         return core.std.ModifyFrame(clip, clip, selector=_degradejpeg)
 
-def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=[0, 1, 2], path=None):
-    # runs randomizable ffmpeg commands in chunks on a clip.
+def ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=[0, 1, 2], path=None):
+    # runs randomizable ffmpeg commands in temporal window chunks on a clip.
     
     # fix error handling
     import signal
@@ -154,23 +154,28 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
     ffmpeg_binary = path or find_binary("ffmpeg") # find ffmpeg
     frame_cache   = {}                            # stores processed frames
     frame_size    = []                            # stores size values after first frame
-    subsample_map = {vs.YUV420P8: "yuv420p",
-                     vs.YUV422P8: "yuv422p",
-                     vs.YUV444P8: "yuv444p"}
+    subsample_map = {vs.YUV420P8:  "yuv420p",
+                     vs.YUV422P8:  "yuv422p",
+                     vs.YUV444P8:  "yuv444p",
+                     vs.YUV420P10: "yuv420p10le",
+                     vs.YUV422P10: "yuv422p10le",
+                     vs.YUV444P10: "yuv444p10le"}
     
     if not isinstance(clip, vs.VideoNode):
         raise TypeError("vs_degrade.ffmpeg: This is not a Vapoursynth clip.")
 
     orig_clip   = clip
     clip_format = clip.format
-    num_planes  = clip.format.num_planes
+    num_planes  = clip_format.num_planes
     num_frames  = clip.num_frames
-    pixfmt      = subsample_map[clip_format.id]
+    bps         = clip_format.bytes_per_sample  # 1 for 8bit, 2 for 10bit padded
 
-    if clip_format.id not in [vs.YUV420P8, vs.YUV422P8, vs.YUV444P8]:
-        raise ValueError("vs_degrade.ffmpeg: Only YUV444P8, YUV422P8, and YUV420P8 encoding is supported for now.")
-    if chunk < 1:
-        raise ValueError("vs_degrade.ffmpeg: Number of frames in a chunk must be at least 1.")
+    if clip_format.bits_per_sample not in [8, 10]:
+        raise ValueError("vs_degrade.ffmpeg: Only 8-bit and 10-Bit encoding is supported for now.")
+    if clip_format.id not in [vs.YUV420P8, vs.YUV422P8, vs.YUV444P8, vs.YUV420P10, vs.YUV422P10, vs.YUV444P10]:
+        raise ValueError("vs_degrade.ffmpeg: Only YUV420P8/P10, YUV422P8/P10, and YUV444P8/P10 encoding is supported for now.")
+    if temp_window < 1:
+        raise ValueError("vs_degrade.ffmpeg: Number of frames in a temporal window must be at least 1.")
     if planes is None:
         planes = list(range(num_planes))
     if isinstance(planes, int):
@@ -178,8 +183,10 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
     if num_planes == 1:
         planes = [0]
     if fields:
-        chunk      = chunk * 2
-        num_frames = num_frames * 2
+        temp_window = temp_window * 2
+        num_frames  = num_frames  * 2
+
+    pixfmt = subsample_map[clip_format.id]
 
     # build tokenized templates
     if isinstance(args, str):
@@ -187,7 +194,7 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
     elif isinstance(args, (list, tuple)) and all(isinstance(t, str) for t in args):
         templates = [shlex.split(t) for t in args]
     else:
-        raise TypeError("vs_degrade.ffmpeg: Args must be a string or list of strings.")
+        raise TypeError("vs_degrade.ffmpeg: Args must be a string or a list of strings.")
 
     # patterns for {rand(a,b)} and {randf(a,b)} and {choice(a,b)}
     _rand_int = re.compile(r"{rand\((-?\d+),\s*(-?\d+)\)}")
@@ -212,27 +219,24 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
     def _read_stream(pipe, sink):
         # background reader that drains pipe into a bytearray
         with pipe:
-            for chunk in iter(lambda: pipe.read(65536), b''):
-                sink.extend(chunk)
+            for temp_window in iter(lambda: pipe.read(65536), b''):
+                sink.extend(temp_window)
 
-    def _encode_chunk(chunk_start, current_frame_n, current_frame):
+    def _encode_window(window_start, current_frame_n, current_frame):
         nonlocal frame_size
-        cur_chunk        = min(chunk, num_frames - chunk_start) # handle last chunk length
+        cur_window  = min(temp_window, num_frames - window_start)  # handle last window length
         if not frame_size:
-            w, h         = current_frame.width, current_frame.height
-            cw, ch       = w >> clip_format.subsampling_w, h >> clip_format.subsampling_h
-            frame_size.extend([w*h + 2*cw*ch, w, h, cw, ch])
-        fs, w, h, cw, ch = frame_size
+            w, h   = current_frame.width, current_frame.height
+            cw, ch = w >> clip_format.subsampling_w, h >> clip_format.subsampling_h
+            frame_size.extend([(w*h + 2*cw*ch) * bps, w, h, cw, ch, bps])
+        fs, w, h, cw, ch, bps_ = frame_size
 
         # pick random args template
         template_tokens = random.choice(templates)
-        tokens = [
-            _randomize_values(t).format(w=w, h=h, pixfmt=pixfmt, n=chunk_start)
-            for t in template_tokens
-        ]
+        tokens = [_randomize_values(t).format(w=w, h=h, pixfmt=pixfmt, n=window_start) for t in template_tokens]
 
         # encode/decode commands
-        enc_cmd = ([ffmpeg_binary, "-loglevel", "error", "-xerror", "-f", "rawvideo", "-pix_fmt", pixfmt, "-s", f"{w}x{h}", "-i", "-"] + tokens + ["-f", "nut", "-"])
+        enc_cmd = ([ffmpeg_binary, "-loglevel", "error", "-xerror", "-f", "rawvideo", "-pix_fmt", pixfmt, "-s", f"{w}x{h}", "-i", "-", "-pix_fmt", f"+{pixfmt}"] + tokens + ["-f", "nut", "-"])
         dec_cmd = ([ffmpeg_binary, "-loglevel", "error", "-xerror", "-i", "-", "-f", "rawvideo", "-pix_fmt", pixfmt, "-"])
 
         # create encoder and decoder subprocess
@@ -245,10 +249,10 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
         rdr = threading.Thread(target=_read_stream, args=(dec.stdout, outbuf))
         rdr.start()
 
-        # feed a chunk of frames into the encoder
+        # feed a window of frames into the encoder
         try:
-            for i in range(cur_chunk):
-                fn = chunk_start + i
+            for i in range(cur_window):
+                fn = window_start + i
                 rf = current_frame if fn == current_frame_n else clip.get_frame(fn)
                 enc.stdin.write(np.asarray(rf[0])[:, :w].tobytes())
                 enc.stdin.write(np.asarray(rf[1])[:, :cw].tobytes())
@@ -260,9 +264,15 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
             enc.wait()
             dec.wait()
             err_txt = enc.stderr.read().decode(errors="replace")
+            hint = ""
+            if "do not have a common format" in err_txt:
+                hint = "\nvs_degrade.ffmpeg: Input clip format is not supported by the chosen codec."
             raise RuntimeError(
-                f"vs_degrade.ffmpeg: Encoding failed with args '{' '.join(tokens)}'\n"
-                f"{err_txt or '<empty>'}"
+                f"{hint}"
+                f"\nvs_degrade.ffmpeg: Encoding failed with args '{' '.join(tokens)}'\n\n"
+                f"Full FFmpeg Error:\n{err_txt or '<empty>'}"
+                f"\nvs_degrade.ffmpeg: Encoding failed with args '{' '.join(tokens)}'"
+                f"{hint}"
                 ) from e
 
         # close encoder input and wait for both processes to finish
@@ -272,20 +282,28 @@ def ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=
         rdr.join()
 
         # slice decoded video into individual frames and cache them
-        for i in range(cur_chunk):
-            frame_cache[chunk_start + i] = memoryview(outbuf)[i*fs:(i+1)*fs]
+        for i in range(cur_window):
+            frame_cache[window_start + i] = memoryview(outbuf)[i*fs:(i+1)*fs]
             
     def _degradeffmpeg(n, f):
         if n not in frame_cache:
-            _encode_chunk((n // chunk) * chunk, n, f)
+            _encode_window((n // temp_window) * temp_window, n, f)
 
-        fs, w, h, cw, ch = frame_size
+        fs, w, h, cw, ch, bps_ = frame_size
         blob = frame_cache.pop(n)
 
+        if bps == 1:
+            dtype = np.uint8
+        else:
+            dtype = np.dtype("<u2")  # uint16 but little-endian just to make sure
+
         # extract planes from raw frame data
-        Y = np.frombuffer(blob, dtype=np.uint8, count=w*h).reshape((h, w))
-        U = np.frombuffer(blob, dtype=np.uint8, count=cw*ch, offset=w*h).reshape((ch, cw))
-        V = np.frombuffer(blob, dtype=np.uint8, count=cw*ch, offset=w*h+cw*ch).reshape((ch, cw))
+        Y_offset = 0
+        U_offset = w*h*bps_
+        V_offset = U_offset + cw*ch*bps_
+        Y = np.frombuffer(blob, dtype=dtype, count=w*h,   offset=Y_offset).reshape((h,  w))
+        U = np.frombuffer(blob, dtype=dtype, count=cw*ch, offset=U_offset).reshape((ch, cw))
+        V = np.frombuffer(blob, dtype=dtype, count=cw*ch, offset=V_offset).reshape((ch, cw))
 
         out = f.copy()
         if 0 in planes:
