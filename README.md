@@ -27,7 +27,7 @@ clip = vs_degrade.jpeg(clip, quality=50, fields=False, planes=[0, 1, 2], path=No
 ```
 
 __*`clip`*__  
-Clip to degrade. Jpeg supports YUV444P8, YUV422P8, and YUV420P8 formats.
+Clip to degrade. Jpeg supports YUV420P8, YUV422P8, and YUV444P8 formats.
 
 __*`quality`*__  
 Image quality in the range 1-100 with 1 being the worst.  
@@ -47,18 +47,18 @@ Path to libjpeg-turbo (`turbojpeg.dll` on Windows, `libturbojpeg.so` on Linux), 
 <br />
 
 ## FFmpeg Degradation
-Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Adds spatial and temporal compression artifacts within each chunk.
+Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Adds spatial and temporal compression artifacts.
 
 ```python
 import vs_degrade
-clip = vs_degrade.ffmpeg(clip, chunk=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=[0, 1, 2], path=None)
+clip = vs_degrade.ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=[0, 1, 2], path=None)
 ```
 
 __*`clip`*__  
-Clip to degrade. Currently supports YUV444P8, YUV422P8, and YUV420P8 formats.
+Clip to degrade. Supports YUV420P8/P10, YUV422P8/P10, YUV444P8/P10 formats.
 
-__*`chunk`*__  
-Amount of frames to encode at once.
+__*`temp_window`*__  
+Temporal window length. The amount of frames to encode at once.
 
 __*`args`*__  
 The video encoding arguments of an FFmpeg command.
@@ -66,7 +66,7 @@ The video encoding arguments of an FFmpeg command.
   ```python
   args = "-c:v mpeg2video -q:v 10"
   ```
-* Arguments can optionally be randomized per chunk:  
+* Arguments can optionally be randomized per temporal window:  
   `{rand(5,50)}` sets randomizer range for int values  
   `{randf(-0.5,0.9)}` sets randomizer range for float values  
   `{choice(veryfast,medium,veryslow)}` chooses randomly from a list  
@@ -74,14 +74,13 @@ The video encoding arguments of an FFmpeg command.
   ```python
   args = "-c:v libx264 -crf {rand(5,50)} -preset {choice(veryfast,medium,veryslow)}"
   ```
-* Full commands can be randomized per chunk by providing a list:
+* Multiple full commands can be randomized per temporal window by providing a list:
   ```python
   args = ["-c:v mpeg2video -q:v {rand(5,30)}",
           "-c:v libx264 -crf {rand(5,50)} -x264-params bframes={rand(0,16)}",
           "-c:v libx265 -crf {rand(5,50)} -preset {choice(veryfast,medium,veryslow)}",
-          "-c:v libvpx-vp9 -crf {rand(5,60)} -b:v 0",
-          "-c:v prores_ks -p:v {rand(0,4)} -q:v {rand(1,9)}"]
-  clip = vs_degrade.ffmpeg(clip, chunk=10, args=args)
+          "-c:v libvpx-vp9 -crf {rand(5,60)} -b:v 0"]
+  clip = vs_degrade.ffmpeg(clip, temp_window=10, args=args)
   ```
 * FFmpeg filters can also be applied. This one for example randomly sharpens before compressing:  
   ```python
