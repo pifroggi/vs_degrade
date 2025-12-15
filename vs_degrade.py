@@ -265,8 +265,8 @@ def ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, p
             dec.wait()
             err_txt = enc.stderr.read().decode(errors="replace")
             hint = ""
-            if "do not have a common format" in err_txt:
-                hint = "\nvs_degrade.ffmpeg: Input clip format is not supported by the chosen codec."
+            if ("do not have a common format" in err_txt) or ("Specified pixel format" in err_txt and "is invalid or not supported" in err_txt):
+                hint = "\nvs_degrade.ffmpeg: Clip's format is not supported by the chosen codec."
             raise RuntimeError(
                 f"{hint}"
                 f"\nvs_degrade.ffmpeg: Encoding failed with args '{' '.join(tokens)}'\n\n"
