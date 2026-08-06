@@ -1,29 +1,31 @@
-# Degradation functions for VapourSynth
+# Add Degradations in VapourSynth
 Mainly to generate datasets without the need for intermediates. Maybe useful to compare encoding settings.
 
-### Requirements
-* [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases) *(optional)*
-   * __Windows:__ Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
-     __Linux:__ Via package manager e.g. `apt install libturbojpeg`
-   * And install python packages via `pip install PyTurboJPEG numpy`
-* [ffmpeg](https://ffmpeg.org/download.html) *(optional)*
-   * Download and add to PATH, or put into your vapoursynth folder.  
-     You have probably already done that.
-   * And install a python package via `pip install numpy`
+<br />
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/pifroggi/vs_degrade/refs/heads/main/README_img.png" width="600" />
+</p>
 
-### Setup
-Put the `vs_degrade.py` file into your vapoursynth scripts folder.  
-Or install via pip: `pip install -U git+https://github.com/pifroggi/vs_degrade.git`
+## Installation
+
+```
+pip install -U vs_degrade
+```
+* Jpeg Degradation requires [libjpeg-turbo](https://github.com/libjpeg-turbo/libjpeg-turbo/releases) *(optional)*:  
+  Windows: Download & install `libjpeg-turbo-X.X.X-vc-x64.exe`  
+  Linux: Via package manager e.g. `apt install libturbojpeg`
+* FFmpeg Degradation requires [ffmpeg](https://ffmpeg.org/download.html) *(optional)*:  
+  Download and add to PATH, or set the path manually via the path parameter.  
 
 <br />
 
 ## Jpeg Degradation
-Degrades a YUV clip directly as is, without upsampling chroma or doing any format/color conversions, since Jpeg also works in YUV. Adds purely spatial compression artifacts and is very fast.
+Degrades a YUV clip directly as is, without upsampling chroma or doing any format/color conversions, since Jpeg also works in YUV. Adds purely spatial compression artifacts very fast.
 
 ```python
 import vs_degrade
-clip = vs_degrade.jpeg(clip, quality=50, fields=False, planes=[0, 1, 2], path=None)
+clip = vs_degrade.jpeg(clip, quality=50, fields=False, seed=0, planes=[0, 1, 2], path=None)
 ```
 
 __*`clip`*__  
@@ -36,6 +38,9 @@ Can be a constant value or randomized each frame by providing a range: `quality=
 __*`fields`* (optional)__  
 Will separate the clip into fields, degrade each field seperately, then put them back together.  
 This creates interlacing artifacts like combing and more mosquito noise.
+
+__*`seed`* (optional)__  
+Seed used for quality randomization.
 
 __*`planes`* (optional)__  
 Which planes to degrade. Any unmentioned planes will simply be copied.  
@@ -51,7 +56,7 @@ Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, withou
 
 ```python
 import vs_degrade
-clip = vs_degrade.ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, planes=[0, 1, 2], path=None)
+clip = vs_degrade.ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, seed=0, planes=[0, 1, 2], path=None)
 ```
 
 __*`clip`*__  
@@ -93,7 +98,10 @@ The video encoding arguments of an FFmpeg command.
 * You may want to add additional interlacing flags if `fields=True`, but it is not strictly necessary:  
   ```python
   args = "-c:v mpeg2video -q:v 10 -flags +ildct+ilme -top 1"
-  ```  
+  ```
+__*`seed`* (optional)__  
+Seed used ffmpeg args randomization.
+  
 __*`fields`* (optional)__  
 Will seperate the clip into fields, degrade with FFmpeg, then put them back together.  
 This creates interlacing artifacts like combing and more mosquito noise.
