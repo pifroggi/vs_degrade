@@ -153,6 +153,8 @@ def jpeg(clip, quality=50, fields=False, seed=0, planes=[0, 1, 2], path=None):
         raise TypeError("vs_degrade.jpeg: Clip must have constant format and dimensions.")
     if clip.format.color_family != vs.YUV:
         raise ValueError("vs_degrade.jpeg: Jpeg works in YUV. This expects the input clip to be YUV already.")
+    if not isinstance(fields, bool):
+        raise TypeError("vs_degrade.jpeg: Fields must be either True or False.")
     if not isinstance(seed, int):
         raise TypeError("vs_degrade.jpeg: Seed must be an integer.")
     
@@ -295,6 +297,8 @@ def ffmpeg(clip, temp_window=10, args="-c:v libx264 -crf 30", fields=False, seed
         raise TypeError("vs_degrade.ffmpeg: Temporal window length must be an integer.")
     if temp_window < 1:
         raise ValueError("vs_degrade.ffmpeg: Temporal window length must be at least 1.")
+    if not isinstance(fields, bool):
+        raise TypeError("vs_degrade.ffmpeg: Fields must be either True or False.")
     if not isinstance(seed, int):
         raise TypeError("vs_degrade.ffmpeg: Seed must be an integer.")
 
