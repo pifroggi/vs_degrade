@@ -247,7 +247,7 @@ def jpeg(clip, quality=50, fields=False, seed=0, planes=[0, 1, 2], path=None):
         return core.std.ModifyFrame(clip, clip, selector=_degrade_jpeg)
 
 
-def ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, seed=0, planes=[0, 1, 2], path=None):
+def ffmpeg(clip, temp_window=10, args="-c:v libx264 -crf 30", fields=False, seed=0, planes=[0, 1, 2], path=None):
     """Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Adds spatial and temporal compression artifacts.
     Args:
         clip: Clip to degrade. Supports YUV420P8/P10, YUV422P8/P10, YUV444P8/P10 formats.
@@ -256,7 +256,7 @@ def ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, s
                 * `{rand(5,50)}` sets randomizer range for int values.
                 * `{randf(-0.5,0.9)}` sets randomizer range for float values.
                 * `{choice(veryfast,medium,veryslow)}` chooses randomly from a list.
-            Multiple full commands can be randomized per temporal window by providing a list. FFmpeg filters can also be applied.
+            Multiple full commands can be randomized per temporal window by providing a list. FFmpeg filters can also be applied. Check the readme for more info.
         fields: Will seperate the clip into fields, degrade with FFmpeg, then put them back together.
             This creates interlacing artifacts like combing and more mosquito noise.
         seed: Seed used for ffmpeg args randomization.
