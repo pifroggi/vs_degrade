@@ -56,7 +56,7 @@ Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, withou
 
 ```python
 import vs_degrade
-clip = vs_degrade.ffmpeg(clip, temp_window=10, args="-c:v mpeg2video -q:v 10", fields=False, seed=0, planes=[0, 1, 2], path=None)
+clip = vs_degrade.ffmpeg(clip, temp_window=10, args="-c:v libx264 -crf 30", fields=False, seed=0, planes=[0, 1, 2], path=None)
 ```
 
 __*`clip`*__  
