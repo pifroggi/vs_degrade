@@ -126,6 +126,7 @@ def find_turbojpeg():
 
 def jpeg(clip, quality=50, fields=False, seed=0, planes=[0, 1, 2], path=None):
     """Degrades a YUV clip directly as is, without upsampling chroma or doing any format/color conversions, since Jpeg also works in YUV. Adds purely spatial compression artifacts very fast.
+    
     Args:
         clip: Clip to degrade. Jpeg supports YUV420P8, YUV422P8, and YUV444P8 formats.
         quality: Image quality in the range 1-100 with 1 being the worst.
@@ -249,13 +250,15 @@ def jpeg(clip, quality=50, fields=False, seed=0, planes=[0, 1, 2], path=None):
 
 def ffmpeg(clip, temp_window=10, args="-c:v libx264 -crf 30", fields=False, seed=0, planes=[0, 1, 2], path=None):
     """Runs randomizable FFmpeg commands in chunks directly on a YUV clip as is, without upsampling chroma or doing any format/color conversions. Adds spatial and temporal compression artifacts.
+    
     Args:
         clip: Clip to degrade. Supports YUV420P8/P10, YUV422P8/P10, YUV444P8/P10 formats.
         temp_window: Temporal window length. The amount of frames to encode at once.
         args: The video encoding arguments of an FFmpeg command. Arguments can optionally be randomized per temporal window:
-                * `{rand(5,50)}` sets randomizer range for int values.
-                * `{randf(-0.5,0.9)}` sets randomizer range for float values.
-                * `{choice(veryfast,medium,veryslow)}` chooses randomly from a list.
+            * `{rand(5,50)}` sets randomizer range for int values.
+            * `{randf(-0.5,0.9)}` sets randomizer range for float values.
+            * `{choice(veryfast,medium,veryslow)}` chooses randomly from a list.
+            
             Multiple full commands can be randomized per temporal window by providing a list. FFmpeg filters can also be applied. Check the readme for more info.
         fields: Will seperate the clip into fields, degrade with FFmpeg, then put them back together.
             This creates interlacing artifacts like combing and more mosquito noise.
